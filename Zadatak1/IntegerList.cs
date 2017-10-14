@@ -41,8 +41,7 @@ namespace Zadatak1
         public bool RemoveAt(int index)
         {
             if (index >= Count || index < 0)
-                return false;
-                //throw new ArgumentOutOfRangeException();
+                throw new IndexOutOfRangeException();
 
             for (var i = index; i < Count - 1; i++)
                 _internalStorage[i] = _internalStorage[i + 1];
@@ -55,7 +54,7 @@ namespace Zadatak1
         public int GetElement(int index)
         {
             if (index >= Count || index < 0)
-                throw new ArgumentOutOfRangeException();
+                throw new IndexOutOfRangeException();
 
             return _internalStorage[index];
         }
