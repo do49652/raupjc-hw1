@@ -72,9 +72,7 @@ namespace Zadatak1
 
         public void Clear()
         {
-            for (var i = 0; i < Count; i++)
-                _internalStorage[i] = 0;
-
+            _internalStorage = new int[_internalStorage.Length];
             Count = 0;
         }
 
