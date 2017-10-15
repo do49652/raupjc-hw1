@@ -13,16 +13,16 @@ namespace Zadatak4
             Width = width;
         }
 
-        public float X { get; set; }
-        public float Y { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-
         /// <summary>
         ///     Represents the texture of the Sprite on the screen .
         ///     Texture2D is a type defined in Monogame framework .
         /// </summary>
         public Texture2D Texture { get; set; }
+
+        public float X { get; set; }
+        public float Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
 
         /// <summary>
         ///     Base draw method

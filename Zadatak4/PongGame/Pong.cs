@@ -1,27 +1,26 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Zadatak3;
+using Zadatak4.Extras;
 
-namespace Zadatak4
+namespace Zadatak4.PongGame
 {
     /// <summary>
     ///     This is the main type for your game.
     /// </summary>
     public class Pong : Game
     {
-        private readonly GraphicsDeviceManager graphics;
+        private readonly GraphicsDeviceManager _graphics;
 
-        private readonly IGenericList<Sprite> SpritesForDrawList = new GenericList<Sprite>();
-        private SpriteBatch spriteBatch;
+        private readonly IGenericList<Sprite> _spritesForDrawList = new GenericList<Sprite>();
+        private SpriteBatch _spriteBatch;
 
         public Pong()
         {
-            graphics = new GraphicsDeviceManager(this)
+            _graphics = new GraphicsDeviceManager(this)
             {
                 PreferredBackBufferHeight = 900,
                 PreferredBackBufferWidth = 500
@@ -37,8 +36,11 @@ namespace Zadatak4
         public SoundEffect HitSound { get; private set; }
         public Song Music { get; private set; }
 
-        public List<Wall> Walls { get; set; }
-        public List<Wall> Goals { get; set; }
+        public GenericList<Wall> Walls { get; set; }
+        public GenericList<Wall> Goals { get; set; }
+
+        public SpriteFont Font { get; set; }
+        public Score Score;
 
         /// <summary>
         ///     Allows the game to perform any initialization it needs to before starting to run.
@@ -64,23 +66,25 @@ namespace Zadatak4
 
             Background = new Background(screenBounds.Width, screenBounds.Height);
 
-            SpritesForDrawList.Add(Background);
-            SpritesForDrawList.Add(PaddleBottom);
-            SpritesForDrawList.Add(PaddleTop);
-            SpritesForDrawList.Add(Ball);
+            _spritesForDrawList.Add(Background);
+            _spritesForDrawList.Add(PaddleBottom);
+            _spritesForDrawList.Add(PaddleTop);
+            _spritesForDrawList.Add(Ball);
 
-            Walls = new List<Wall>
+            Walls = new GenericList<Wall>
             {
                 new Wall(-GameConstants.WallDefaultSize, 0, GameConstants.WallDefaultSize, screenBounds.Height),
                 new Wall(screenBounds.Right, 0, GameConstants.WallDefaultSize, screenBounds.Height)
             };
 
-            Goals = new List<Wall>
+            Goals = new GenericList<Wall>
             {
                 new Wall(0, screenBounds.Height, screenBounds.Width, GameConstants.WallDefaultSize),
                 new Wall(screenBounds.Top, -GameConstants.WallDefaultSize, screenBounds.Width,
                     GameConstants.WallDefaultSize)
             };
+
+            Score = new Score();
 
             base.Initialize();
         }
@@ -90,7 +94,7 @@ namespace Zadatak4
         /// </summary>
         protected override void LoadContent()
         {
-            spriteBatch = new SpriteBatch(GraphicsDevice);
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             var paddleTexture = Content.Load<Texture2D>("paddle");
             PaddleBottom.Texture = paddleTexture;
@@ -102,6 +106,8 @@ namespace Zadatak4
             Music = Content.Load<Song>("music");
             MediaPlayer.IsRepeating = true;
             MediaPlayer.Play(Music);
+
+            Font = Content.Load<SpriteFont>("font");
         }
 
         /// <summary>
@@ -150,8 +156,8 @@ namespace Zadatak4
             Ball.Y += ballPositionChange.Y;
 
             // Ball hitting side walls
-            if (CollisionDetector.Overlaps(Ball, Walls.ElementAt(0)) ||
-                CollisionDetector.Overlaps(Ball, Walls.ElementAt(1)))
+            if (CollisionDetector.Overlaps(Ball, Walls.GetElement(0)) ||
+                CollisionDetector.Overlaps(Ball, Walls.GetElement(1)))
             {
                 HitSound.Play(0.2f, 0, 0);
                 Ball.Direction.invertX();
@@ -159,12 +165,15 @@ namespace Zadatak4
             }
 
             // Ball hitting goals
-            if (CollisionDetector.Overlaps(Ball, Goals.ElementAt(0)) ||
-                CollisionDetector.Overlaps(Ball, Goals.ElementAt(1)))
+            if (CollisionDetector.Overlaps(Ball, Goals.GetElement(0)))
             {
-                Ball.Speed = GameConstants.DefaultInitialBallSpeed;
-                Ball.X = screenBounds.Width / 2f - Ball.Width / 2f;
-                Ball.Y = screenBounds.Height / 2f - Ball.Height / 2f;
+                Score.Player1++;
+                ResetBall();
+            }
+            if (CollisionDetector.Overlaps(Ball, Goals.GetElement(1)))
+            {
+                Score.Player2++;
+                ResetBall();
             }
 
             // Ball hitting paddles
@@ -181,9 +190,7 @@ namespace Zadatak4
                     screenBounds.Height + GameConstants.WallDefaultSize)
                 .Intersects(new Rectangle((int)Ball.X, (int)Ball.Y, Ball.Width, Ball.Height)))
             {
-                Ball.Speed = GameConstants.DefaultInitialBallSpeed;
-                Ball.X = screenBounds.Width / 2f - Ball.Width / 2f;
-                Ball.Y = screenBounds.Height / 2f - Ball.Height / 2f;
+                ResetBall();
             }
 
             base.Update(gameTime);
@@ -194,12 +201,27 @@ namespace Zadatak4
         /// </summary>
         protected override void Draw(GameTime gameTime)
         {
-            spriteBatch.Begin();
-            for (var i = 0; i < SpritesForDrawList.Count; i++)
-                SpritesForDrawList.GetElement(i).DrawSpriteOnScreen(spriteBatch);
-            spriteBatch.End();
+            var screenBounds = GraphicsDevice.Viewport.Bounds;
+
+            _spriteBatch.Begin();
+
+            for (var i = 0; i < _spritesForDrawList.Count; i++)
+                _spritesForDrawList.GetElement(i).DrawSpriteOnScreen(_spriteBatch);
+            
+            _spriteBatch.DrawString(Font, Score.Player1.ToString(), new Vector2(screenBounds.Width - Font.MeasureString(Score.Player1.ToString()).X, screenBounds.Height / 2 - Font.MeasureString(Score.Player1.ToString()).Y), Color.Black);
+            _spriteBatch.DrawString(Font, Score.Player2.ToString(), new Vector2(screenBounds.Width - Font.MeasureString(Score.Player2.ToString()).X, screenBounds.Height / 2), Color.Black);
+
+            _spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        private void ResetBall()
+        {
+            var screenBounds = GraphicsDevice.Viewport.Bounds;
+            Ball.Speed = GameConstants.DefaultInitialBallSpeed;
+            Ball.X = screenBounds.Width / 2f - Ball.Width / 2f;
+            Ball.Y = screenBounds.Height / 2f - Ball.Height / 2f;
         }
     }
 }

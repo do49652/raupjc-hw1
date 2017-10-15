@@ -2,10 +2,6 @@
 {
     public class Wall : IPhysicalObject2D
     {
-        public float X { get; set; }
-        public float Y { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
         public Wall(float x, float y, int width, int height)
         {
             X = x;
@@ -13,5 +9,10 @@
             Width = width;
             Height = height;
         }
+
+        public float X { get; set; }
+        public float Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
     }
 }

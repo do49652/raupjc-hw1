@@ -1,6 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-
-namespace Zadatak4
+﻿namespace Zadatak4
 {
     /// <summary>
     ///     Game ball object representation

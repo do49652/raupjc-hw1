@@ -37,17 +37,12 @@
 /processorParam:TextureFormat=Color
 /build:ball.png
 
-#begin paddle.jpg
-/importer:TextureImporter
-/processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
-/processorParam:ColorKeyEnabled=True
-/processorParam:GenerateMipmaps=False
+#begin font.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
 /processorParam:PremultiplyAlpha=True
-/processorParam:ResizeToPowerOfTwo=False
-/processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
-/build:paddle.jpg
+/processorParam:TextureFormat=Compressed
+/build:font.spritefont
 
 #begin hit.wav
 /importer:WavImporter
@@ -60,4 +55,16 @@
 /processor:SongProcessor
 /processorParam:Quality=Best
 /build:music.mp3
+
+#begin paddle.jpg
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:paddle.jpg
 

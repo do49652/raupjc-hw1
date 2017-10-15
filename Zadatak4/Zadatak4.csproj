@@ -43,6 +43,7 @@
   <ItemGroup>
     <Compile Include="PongGame\BallDirection.cs" />
     <Compile Include="PongGame\CollisionDetector.cs" />
+    <Compile Include="PongGame\Extras\Score.cs" />
     <Compile Include="PongGame\GameConstants.cs" />
     <Compile Include="PongGame\Objects\IPhysicalObject2D.cs" />
     <Compile Include="PongGame\Objects\Background.cs" />
