@@ -19,7 +19,10 @@ namespace Zadatak4.Extras
         {
             _pong = pong;
             foreach (var ball in _pong.Ball)
-                ball.Speed = 0.15f;
+            {
+                var rnd = new Random();
+                ball.Speed = rnd.Next(0, 10) > 2 ? 0.15f : 1.15f;
+            }
             _repeat = 10;
 
             _timer = new Timer();

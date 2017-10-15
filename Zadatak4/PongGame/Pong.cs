@@ -18,7 +18,12 @@ namespace Zadatak4.PongGame
         private readonly GraphicsDeviceManager _graphics;
 
         private readonly IGenericList<Sprite> _spritesForDrawList = new GenericList<Sprite>();
+        private Texture2D _multiBallPickupTexture;
+        private Texture2D _speedPickupTexture;
         private SpriteBatch _spriteBatch;
+        public Texture2D BallTexture;
+        public Score Score;
+        public string Timer = "0";
 
         public Pong()
         {
@@ -32,7 +37,7 @@ namespace Zadatak4.PongGame
 
         public Paddle PaddleBottom { get; private set; }
         public Paddle PaddleTop { get; private set; }
-        public GenericList<Ball> Ball { get; private set; }
+        public GenericList<Ball> Ball { get; set; }
         public Background Background { get; private set; }
 
         public SoundEffect HitSound { get; private set; }
@@ -42,13 +47,8 @@ namespace Zadatak4.PongGame
         public GenericList<Wall> Goals { get; set; }
 
         public SpriteFont Font { get; set; }
-        public Score Score;
-        public string Timer = "0";
 
         public GenericList<Pickup> Pickups { get; set; }
-        public Texture2D BallTexture;
-        private Texture2D _speedPickupTexture;
-        private Texture2D _multiBallPickupTexture;
 
         /// <summary>
         ///     Allows the game to perform any initialization it needs to before starting to run.
@@ -79,7 +79,6 @@ namespace Zadatak4.PongGame
 
             _spritesForDrawList.Add(PaddleBottom);
             _spritesForDrawList.Add(PaddleTop);
-            _spritesForDrawList.Add(Ball.GetElement(0));
 
             Walls = new GenericList<Wall>
             {
@@ -164,7 +163,8 @@ namespace Zadatak4.PongGame
             foreach (var ball in Ball)
             {
                 //Ball movement
-                var ballPositionChange = ball.Direction * (float)(gameTime.ElapsedGameTime.TotalMilliseconds * ball.Speed);
+                var ballPositionChange =
+                    ball.Direction * (float)(gameTime.ElapsedGameTime.TotalMilliseconds * ball.Speed);
                 ball.X += ballPositionChange.X;
                 ball.Y += ballPositionChange.Y;
 
@@ -207,24 +207,23 @@ namespace Zadatak4.PongGame
                 }
 
                 if (Timer.Equals("0"))
-                {
                     foreach (var pickup in Pickups)
                     {
                         if (!CollisionDetector.Overlaps(ball, pickup)) continue;
                         pickup.Activate(this);
                         Pickups.Remove(pickup);
                     }
-                }
+                if (int.Parse(Timer) < 0)
+                    Timer = "0";
             }
 
             //Ball outside of the screen
             if (!new Rectangle(-GameConstants.WallDefaultSize, -GameConstants.WallDefaultSize,
                     screenBounds.Width + GameConstants.WallDefaultSize,
                     screenBounds.Height + GameConstants.WallDefaultSize)
-                .Intersects(new Rectangle((int)Ball.GetElement(0).X, (int)Ball.GetElement(0).Y, Ball.GetElement(0).Width, Ball.GetElement(0).Height)))
-            {
+                .Intersects(new Rectangle((int)Ball.GetElement(0).X, (int)Ball.GetElement(0).Y,
+                    Ball.GetElement(0).Width, Ball.GetElement(0).Height)))
                 ResetBall();
-            }
 
             base.Update(gameTime);
         }
@@ -246,10 +245,17 @@ namespace Zadatak4.PongGame
             for (var i = 0; i < _spritesForDrawList.Count; i++)
                 _spritesForDrawList.GetElement(i).DrawSpriteOnScreen(_spriteBatch);
 
+            for (var i = 0; i < Ball.Count; i++)
+                Ball.GetElement(i).DrawSpriteOnScreen(_spriteBatch);
+
             if (int.Parse(Timer) > 0)
                 _spriteBatch.DrawString(Font, Timer, new Vector2(0, Font.MeasureString(Timer).Y), Color.Black);
-            _spriteBatch.DrawString(Font, Score.Player1.ToString(), new Vector2(screenBounds.Width - Font.MeasureString(Score.Player1.ToString()).X, screenBounds.Height / 2f - Font.MeasureString(Score.Player1.ToString()).Y), Color.Black);
-            _spriteBatch.DrawString(Font, Score.Player2.ToString(), new Vector2(screenBounds.Width - Font.MeasureString(Score.Player2.ToString()).X, screenBounds.Height / 2f), Color.Black);
+            _spriteBatch.DrawString(Font, Score.Player1.ToString(),
+                new Vector2(screenBounds.Width - Font.MeasureString(Score.Player1.ToString()).X,
+                    screenBounds.Height / 2f - Font.MeasureString(Score.Player1.ToString()).Y), Color.Black);
+            _spriteBatch.DrawString(Font, Score.Player2.ToString(),
+                new Vector2(screenBounds.Width - Font.MeasureString(Score.Player2.ToString()).X,
+                    screenBounds.Height / 2f), Color.Black);
 
             _spriteBatch.End();
 
@@ -269,16 +275,27 @@ namespace Zadatak4.PongGame
         {
             var screenBounds = GraphicsDevice.Viewport.Bounds;
             var rnd = new Random();
-            if (rnd.Next(0, 10) > 8) return;
+            if (Pickups.Count > 5 || rnd.Next(0, 10) > 3) return;
 
-            var speedPickup = new SpeedUpPickup(GameConstants.DefaultBallSize, GameConstants.DefaultBallSize,
-                rnd.Next(GameConstants.WallDefaultSize, screenBounds.Width - GameConstants.WallDefaultSize),
-                rnd.Next(GameConstants.WallDefaultSize, screenBounds.Height - GameConstants.WallDefaultSize))
+            Pickup[] pickups =
             {
-                Texture = _speedPickupTexture
+                new SpeedUpPickup(GameConstants.DefaultBallSize,
+                    GameConstants.DefaultBallSize,
+                    rnd.Next(GameConstants.WallDefaultSize, screenBounds.Width - GameConstants.WallDefaultSize),
+                    rnd.Next(GameConstants.WallDefaultSize, screenBounds.Height - GameConstants.WallDefaultSize))
+                {
+                    Texture = _speedPickupTexture
+                },
+                new MultiBallPickup(GameConstants.DefaultBallSize,
+                    GameConstants.DefaultBallSize,
+                    rnd.Next(GameConstants.WallDefaultSize, screenBounds.Width - GameConstants.WallDefaultSize),
+                    rnd.Next(GameConstants.WallDefaultSize, screenBounds.Height - GameConstants.WallDefaultSize))
+                {
+                    Texture = _multiBallPickupTexture
+                }
             };
 
-            Pickups.Add(speedPickup);
+            Pickups.Add(pickups[rnd.Next(0, pickups.Length)]);
         }
     }
 }
