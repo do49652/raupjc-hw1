@@ -59,7 +59,7 @@ namespace Zadatak4
 
             Ball = new Ball(GameConstants.DefaultBallSize, GameConstants.DefaultInitialBallSpeed,
                 GameConstants.DefaultBallBumpSpeedIncreaseFactor);
-            Ball.X = 100000 + screenBounds.Width / 2f - Ball.Width / 2f;
+            Ball.X = screenBounds.Width / 2f - Ball.Width / 2f;
             Ball.Y = screenBounds.Height / 2f - Ball.Height / 2f;
 
             Background = new Background(screenBounds.Width, screenBounds.Height);
@@ -125,15 +125,15 @@ namespace Zadatak4
 
             //Down paddle control
             if (touchState.IsKeyDown(Keys.Left))
-                PaddleBottom.X -= (float) (PaddleBottom.Speed * gameTime.ElapsedGameTime.TotalMilliseconds);
+                PaddleBottom.X -= (float)(PaddleBottom.Speed * gameTime.ElapsedGameTime.TotalMilliseconds);
             if (touchState.IsKeyDown(Keys.Right))
-                PaddleBottom.X += (float) (PaddleBottom.Speed * gameTime.ElapsedGameTime.TotalMilliseconds);
+                PaddleBottom.X += (float)(PaddleBottom.Speed * gameTime.ElapsedGameTime.TotalMilliseconds);
 
             //Top paddle control
             if (touchState.IsKeyDown(Keys.A))
-                PaddleTop.X -= (float) (PaddleTop.Speed * gameTime.ElapsedGameTime.TotalMilliseconds);
+                PaddleTop.X -= (float)(PaddleTop.Speed * gameTime.ElapsedGameTime.TotalMilliseconds);
             if (touchState.IsKeyDown(Keys.D))
-                PaddleTop.X += (float) (PaddleTop.Speed * gameTime.ElapsedGameTime.TotalMilliseconds);
+                PaddleTop.X += (float)(PaddleTop.Speed * gameTime.ElapsedGameTime.TotalMilliseconds);
 
             //Limit paddle position
             PaddleBottom.X =
@@ -145,7 +145,7 @@ namespace Zadatak4
                 GameConstants.DefaultMaxBallSpeed);
 
             //Ball movement
-            var ballPositionChange = Ball.Direction * (float) (gameTime.ElapsedGameTime.TotalMilliseconds * Ball.Speed);
+            var ballPositionChange = Ball.Direction * (float)(gameTime.ElapsedGameTime.TotalMilliseconds * Ball.Speed);
             Ball.X += ballPositionChange.X;
             Ball.Y += ballPositionChange.Y;
 
@@ -154,7 +154,7 @@ namespace Zadatak4
                 CollisionDetector.Overlaps(Ball, Walls.ElementAt(1)))
             {
                 HitSound.Play(0.2f, 0, 0);
-                Ball.Direction = new Vector2(-Ball.Direction.X, Ball.Direction.Y);
+                Ball.Direction.invertX();
                 Ball.Speed *= Ball.BumpSpeedIncreaseFactor;
             }
 
@@ -171,7 +171,7 @@ namespace Zadatak4
             if (CollisionDetector.Overlaps(Ball, PaddleTop) || CollisionDetector.Overlaps(Ball, PaddleBottom))
             {
                 HitSound.Play(0.2f, 0, 0);
-                Ball.Direction = new Vector2(Ball.Direction.X, -Ball.Direction.Y);
+                Ball.Direction.invertY();
                 Ball.Speed *= Ball.BumpSpeedIncreaseFactor;
             }
 
@@ -179,7 +179,7 @@ namespace Zadatak4
             if (!new Rectangle(-GameConstants.WallDefaultSize, -GameConstants.WallDefaultSize,
                     screenBounds.Width + GameConstants.WallDefaultSize,
                     screenBounds.Height + GameConstants.WallDefaultSize)
-                .Intersects(new Rectangle((int) Ball.X, (int) Ball.Y, Ball.Width, Ball.Height)))
+                .Intersects(new Rectangle((int)Ball.X, (int)Ball.Y, Ball.Width, Ball.Height)))
             {
                 Ball.Speed = GameConstants.DefaultInitialBallSpeed;
                 Ball.X = screenBounds.Width / 2f - Ball.Width / 2f;

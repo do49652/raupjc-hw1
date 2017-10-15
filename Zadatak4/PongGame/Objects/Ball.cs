@@ -11,24 +11,19 @@ namespace Zadatak4
         {
             Speed = speed;
             BumpSpeedIncreaseFactor = defaultBallBumpSpeedIncreaseFactor;
-            // Initial direction
-            Direction = new Vector2(1, 1);
+            Direction = new BallDirection(1, 1);
         }
 
         /// <summary>
-        ///     Defines current ball speed in time .
+        ///     Defines current ball speed in time.
         /// </summary>
         public float Speed { get; set; }
 
         public float BumpSpeedIncreaseFactor { get; set; }
 
         /// <summary>
-        ///     Defines ball direction .
-        ///     Valid values ( -1 , -1) , (1 ,1) , (1 , -1) , ( -1 ,1).
-        ///     Using Vector2 to simplify game calculation . Potentially
-        ///     dangerous because vector 2 can swallow other values as well .
-        ///     OPTIONAL TODO : create your own , more suitable type
+        ///     Defines ball direction.
         /// </summary>
-        public Vector2 Direction { get; set; }
+        public BallDirection Direction { get; set; }
     }
 }
