@@ -5,6 +5,15 @@
         private float _x;
         private float _y;
 
+        public BallDirection(BallDirection a)
+        {
+            if (a._x > 0) X = 1;
+            else X = -1;
+
+            if (a._y > 0) Y = 1;
+            else Y = -1;
+        }
+
         public BallDirection(float x, float y)
         {
             if (x > 0) X = 1;
