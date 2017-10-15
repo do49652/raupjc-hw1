@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using System.Diagnostics;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -30,7 +32,7 @@ namespace Zadatak4.PongGame
 
         public Paddle PaddleBottom { get; private set; }
         public Paddle PaddleTop { get; private set; }
-        public Ball Ball { get; private set; }
+        public GenericList<Ball> Ball { get; private set; }
         public Background Background { get; private set; }
 
         public SoundEffect HitSound { get; private set; }
@@ -41,6 +43,12 @@ namespace Zadatak4.PongGame
 
         public SpriteFont Font { get; set; }
         public Score Score;
+        public string Timer = "0";
+
+        public GenericList<Pickup> Pickups { get; set; }
+        public Texture2D BallTexture;
+        private Texture2D _speedPickupTexture;
+        private Texture2D _multiBallPickupTexture;
 
         /// <summary>
         ///     Allows the game to perform any initialization it needs to before starting to run.
@@ -59,17 +67,19 @@ namespace Zadatak4.PongGame
             PaddleTop.X = screenBounds.Width / 2f - PaddleTop.Width / 2f;
             PaddleTop.Y = screenBounds.Top;
 
-            Ball = new Ball(GameConstants.DefaultBallSize, GameConstants.DefaultInitialBallSpeed,
-                GameConstants.DefaultBallBumpSpeedIncreaseFactor);
-            Ball.X = screenBounds.Width / 2f - Ball.Width / 2f;
-            Ball.Y = screenBounds.Height / 2f - Ball.Height / 2f;
+            Ball = new GenericList<Ball>
+            {
+                new Ball(GameConstants.DefaultBallSize, GameConstants.DefaultInitialBallSpeed,
+                    GameConstants.DefaultBallBumpSpeedIncreaseFactor)
+            };
+            Ball.GetElement(0).X = screenBounds.Width / 2f - Ball.GetElement(0).Width / 2f;
+            Ball.GetElement(0).Y = screenBounds.Height / 2f - Ball.GetElement(0).Height / 2f;
 
             Background = new Background(screenBounds.Width, screenBounds.Height);
 
-            _spritesForDrawList.Add(Background);
             _spritesForDrawList.Add(PaddleBottom);
             _spritesForDrawList.Add(PaddleTop);
-            _spritesForDrawList.Add(Ball);
+            _spritesForDrawList.Add(Ball.GetElement(0));
 
             Walls = new GenericList<Wall>
             {
@@ -85,6 +95,7 @@ namespace Zadatak4.PongGame
             };
 
             Score = new Score();
+            Pickups = new GenericList<Pickup>();
 
             base.Initialize();
         }
@@ -99,8 +110,12 @@ namespace Zadatak4.PongGame
             var paddleTexture = Content.Load<Texture2D>("paddle");
             PaddleBottom.Texture = paddleTexture;
             PaddleTop.Texture = paddleTexture;
-            Ball.Texture = Content.Load<Texture2D>("ball");
+            BallTexture = Content.Load<Texture2D>("ball");
+            Ball.GetElement(0).Texture = BallTexture;
             Background.Texture = Content.Load<Texture2D>("background");
+
+            _speedPickupTexture = Content.Load<Texture2D>("speedPickup");
+            _multiBallPickupTexture = Content.Load<Texture2D>("multiBallPickup");
 
             HitSound = Content.Load<SoundEffect>("hit");
             Music = Content.Load<Song>("music");
@@ -146,49 +161,67 @@ namespace Zadatak4.PongGame
                 MathHelper.Clamp(PaddleBottom.X, screenBounds.Left, screenBounds.Right - PaddleBottom.Width);
             PaddleTop.X = MathHelper.Clamp(PaddleTop.X, screenBounds.Left, screenBounds.Right - PaddleTop.Width);
 
-            //Limit ball speed
-            Ball.Speed = MathHelper.Clamp(Ball.Speed, GameConstants.DefaultInitialBallSpeed,
-                GameConstants.DefaultMaxBallSpeed);
-
-            //Ball movement
-            var ballPositionChange = Ball.Direction * (float)(gameTime.ElapsedGameTime.TotalMilliseconds * Ball.Speed);
-            Ball.X += ballPositionChange.X;
-            Ball.Y += ballPositionChange.Y;
-
-            // Ball hitting side walls
-            if (CollisionDetector.Overlaps(Ball, Walls.GetElement(0)) ||
-                CollisionDetector.Overlaps(Ball, Walls.GetElement(1)))
+            foreach (var ball in Ball)
             {
-                HitSound.Play(0.2f, 0, 0);
-                Ball.Direction.invertX();
-                Ball.Speed *= Ball.BumpSpeedIncreaseFactor;
-            }
+                //Ball movement
+                var ballPositionChange = ball.Direction * (float)(gameTime.ElapsedGameTime.TotalMilliseconds * ball.Speed);
+                ball.X += ballPositionChange.X;
+                ball.Y += ballPositionChange.Y;
 
-            // Ball hitting goals
-            if (CollisionDetector.Overlaps(Ball, Goals.GetElement(0)))
-            {
-                Score.Player1++;
-                ResetBall();
-            }
-            if (CollisionDetector.Overlaps(Ball, Goals.GetElement(1)))
-            {
-                Score.Player2++;
-                ResetBall();
-            }
+                // Ball hitting side walls
+                if (CollisionDetector.Overlaps(ball, Walls.GetElement(0)) ||
+                    CollisionDetector.Overlaps(ball, Walls.GetElement(1)))
+                {
+                    HitSound.Play(0.2f, 0, 0);
+                    ball.Direction.invertX();
+                    if (ball.Speed < GameConstants.DefaultMaxBallSpeed)
+                        ball.Speed *= ball.BumpSpeedIncreaseFactor;
+                }
 
-            // Ball hitting paddles
-            if (CollisionDetector.Overlaps(Ball, PaddleTop) || CollisionDetector.Overlaps(Ball, PaddleBottom))
-            {
-                HitSound.Play(0.2f, 0, 0);
-                Ball.Direction.invertY();
-                Ball.Speed *= Ball.BumpSpeedIncreaseFactor;
+                // Ball hitting goals
+                if (CollisionDetector.Overlaps(ball, Goals.GetElement(0)))
+                {
+                    Score.Player1++;
+                    if (Ball.Count == 1) ResetBall();
+                    else Ball.Remove(ball);
+                }
+                if (CollisionDetector.Overlaps(ball, Goals.GetElement(1)))
+                {
+                    Score.Player2++;
+                    if (Ball.Count == 1) ResetBall();
+                    else Ball.Remove(ball);
+                }
+
+                // Ball hitting paddles
+                if (CollisionDetector.Overlaps(ball, PaddleTop) || CollisionDetector.Overlaps(ball, PaddleBottom))
+                {
+                    HitSound.Play(0.2f, 0, 0);
+                    ball.Direction.invertY();
+                    if (ball.Speed < GameConstants.DefaultMaxBallSpeed)
+                        ball.Speed *= ball.BumpSpeedIncreaseFactor;
+
+                    Debug.Print(Ball.Count.ToString());
+
+                    if (ball == Ball.GetElement(0))
+                        SpawnPickups();
+                }
+
+                if (Timer.Equals("0"))
+                {
+                    foreach (var pickup in Pickups)
+                    {
+                        if (!CollisionDetector.Overlaps(ball, pickup)) continue;
+                        pickup.Activate(this);
+                        Pickups.Remove(pickup);
+                    }
+                }
             }
 
             //Ball outside of the screen
             if (!new Rectangle(-GameConstants.WallDefaultSize, -GameConstants.WallDefaultSize,
                     screenBounds.Width + GameConstants.WallDefaultSize,
                     screenBounds.Height + GameConstants.WallDefaultSize)
-                .Intersects(new Rectangle((int)Ball.X, (int)Ball.Y, Ball.Width, Ball.Height)))
+                .Intersects(new Rectangle((int)Ball.GetElement(0).X, (int)Ball.GetElement(0).Y, Ball.GetElement(0).Width, Ball.GetElement(0).Height)))
             {
                 ResetBall();
             }
@@ -205,11 +238,18 @@ namespace Zadatak4.PongGame
 
             _spriteBatch.Begin();
 
+            Background.DrawSpriteOnScreen(_spriteBatch);
+
+            for (var i = 0; i < Pickups.Count; i++)
+                Pickups.GetElement(i).DrawSpriteOnScreen(_spriteBatch);
+
             for (var i = 0; i < _spritesForDrawList.Count; i++)
                 _spritesForDrawList.GetElement(i).DrawSpriteOnScreen(_spriteBatch);
-            
-            _spriteBatch.DrawString(Font, Score.Player1.ToString(), new Vector2(screenBounds.Width - Font.MeasureString(Score.Player1.ToString()).X, screenBounds.Height / 2 - Font.MeasureString(Score.Player1.ToString()).Y), Color.Black);
-            _spriteBatch.DrawString(Font, Score.Player2.ToString(), new Vector2(screenBounds.Width - Font.MeasureString(Score.Player2.ToString()).X, screenBounds.Height / 2), Color.Black);
+
+            if (int.Parse(Timer) > 0)
+                _spriteBatch.DrawString(Font, Timer, new Vector2(0, Font.MeasureString(Timer).Y), Color.Black);
+            _spriteBatch.DrawString(Font, Score.Player1.ToString(), new Vector2(screenBounds.Width - Font.MeasureString(Score.Player1.ToString()).X, screenBounds.Height / 2f - Font.MeasureString(Score.Player1.ToString()).Y), Color.Black);
+            _spriteBatch.DrawString(Font, Score.Player2.ToString(), new Vector2(screenBounds.Width - Font.MeasureString(Score.Player2.ToString()).X, screenBounds.Height / 2f), Color.Black);
 
             _spriteBatch.End();
 
@@ -219,9 +259,26 @@ namespace Zadatak4.PongGame
         private void ResetBall()
         {
             var screenBounds = GraphicsDevice.Viewport.Bounds;
-            Ball.Speed = GameConstants.DefaultInitialBallSpeed;
-            Ball.X = screenBounds.Width / 2f - Ball.Width / 2f;
-            Ball.Y = screenBounds.Height / 2f - Ball.Height / 2f;
+            Ball.GetElement(0).Speed = GameConstants.DefaultInitialBallSpeed;
+            Ball.GetElement(0).X = screenBounds.Width / 2f - Ball.GetElement(0).Width / 2f;
+            Ball.GetElement(0).Y = screenBounds.Height / 2f - Ball.GetElement(0).Height / 2f;
+            Timer = "-1";
+        }
+
+        private void SpawnPickups()
+        {
+            var screenBounds = GraphicsDevice.Viewport.Bounds;
+            var rnd = new Random();
+            if (rnd.Next(0, 10) > 8) return;
+
+            var speedPickup = new SpeedUpPickup(GameConstants.DefaultBallSize, GameConstants.DefaultBallSize,
+                rnd.Next(GameConstants.WallDefaultSize, screenBounds.Width - GameConstants.WallDefaultSize),
+                rnd.Next(GameConstants.WallDefaultSize, screenBounds.Height - GameConstants.WallDefaultSize))
+            {
+                Texture = _speedPickupTexture
+            };
+
+            Pickups.Add(speedPickup);
         }
     }
 }
