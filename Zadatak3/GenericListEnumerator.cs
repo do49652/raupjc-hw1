@@ -6,13 +6,12 @@ namespace Zadatak3
     public class GenericListEnumerator<T> : IEnumerator<T>
     {
         private int _currentIndex;
-        private readonly GenericList<T> genericList;
+        private readonly GenericList<T> _genericList;
 
         public GenericListEnumerator(GenericList<T> genericList)
         {
-            _currentIndex = 0;
-            this.genericList = genericList;
-            Current = this.genericList.GetElement(_currentIndex);
+            _currentIndex = -1;
+            this._genericList = genericList;
         }
 
         public void Dispose()
@@ -21,20 +20,18 @@ namespace Zadatak3
 
         public bool MoveNext()
         {
-            if (_currentIndex + 1 >= genericList.Count)
+            if (_currentIndex + 1 >= _genericList.Count)
                 return false;
-
-            Current = genericList.GetElement(++_currentIndex);
+            _currentIndex++;
             return true;
         }
 
         public void Reset()
         {
-            _currentIndex = 0;
-            Current = genericList.GetElement(_currentIndex);
+            _currentIndex = -1;
         }
 
-        public T Current { get; private set; }
+        public T Current => _genericList.GetElement(_currentIndex);
 
         object IEnumerator.Current => Current;
     }
