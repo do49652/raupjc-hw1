@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
@@ -10,20 +9,14 @@ using Zadatak4.Extras;
 
 namespace Zadatak4.PongGame
 {
-    /// <summary>
-    ///     This is the main type for your game.
-    /// </summary>
     public class Pong : Game
     {
         private readonly GraphicsDeviceManager _graphics;
 
-        private readonly IGenericList<Sprite> _spritesForDrawList = new GenericList<Sprite>();
         private Texture2D _multiBallPickupTexture;
         private Texture2D _speedPickupTexture;
         private SpriteBatch _spriteBatch;
-        public Texture2D BallTexture;
-        public Score Score;
-        public string Timer = "0";
+        private bool _paddleAi;
 
         public Pong()
         {
@@ -34,6 +27,10 @@ namespace Zadatak4.PongGame
             };
             Content.RootDirectory = "Content";
         }
+
+        public Texture2D BallTexture { get; set; }
+        public Score Score { get; set; }
+        public string Timer { get; set; }
 
         public Paddle PaddleBottom { get; private set; }
         public Paddle PaddleTop { get; private set; }
@@ -58,27 +55,31 @@ namespace Zadatak4.PongGame
             var screenBounds = GraphicsDevice.Viewport.Bounds;
 
             PaddleBottom = new Paddle(GameConstants.PaddleDefaultWidth, GameConstants.PaddleDefaulHeight,
-                GameConstants.PaddleDefaulSpeed);
-            PaddleBottom.X = screenBounds.Width / 2f - PaddleBottom.Width / 2f;
-            PaddleBottom.Y = screenBounds.Bottom - PaddleBottom.Height;
+                GameConstants.PaddleDefaulSpeed)
+            {
+                X = screenBounds.Width / 2f - GameConstants.PaddleDefaultWidth / 2f,
+                Y = screenBounds.Bottom - GameConstants.PaddleDefaulHeight
+            };
+            _paddleAi = true;
 
             PaddleTop = new Paddle(GameConstants.PaddleDefaultWidth, GameConstants.PaddleDefaulHeight,
-                GameConstants.PaddleDefaulSpeed);
-            PaddleTop.X = screenBounds.Width / 2f - PaddleTop.Width / 2f;
-            PaddleTop.Y = screenBounds.Top;
+                GameConstants.PaddleDefaulSpeed)
+            {
+                X = screenBounds.Width / 2f - GameConstants.PaddleDefaultWidth / 2f,
+                Y = screenBounds.Top
+            };
 
             Ball = new GenericList<Ball>
             {
                 new Ball(GameConstants.DefaultBallSize, GameConstants.DefaultInitialBallSpeed,
                     GameConstants.DefaultBallBumpSpeedIncreaseFactor)
+                {
+                    X = screenBounds.Width / 2f - GameConstants.DefaultBallSize / 2f,
+                    Y = screenBounds.Height / 2f - GameConstants.DefaultBallSize / 2f
+                }
             };
-            Ball.GetElement(0).X = screenBounds.Width / 2f - Ball.GetElement(0).Width / 2f;
-            Ball.GetElement(0).Y = screenBounds.Height / 2f - Ball.GetElement(0).Height / 2f;
 
             Background = new Background(screenBounds.Width, screenBounds.Height);
-
-            _spritesForDrawList.Add(PaddleBottom);
-            _spritesForDrawList.Add(PaddleTop);
 
             Walls = new GenericList<Wall>
             {
@@ -94,6 +95,7 @@ namespace Zadatak4.PongGame
             };
 
             Score = new Score();
+            Timer = "0";
             Pickups = new GenericList<Pickup>();
 
             base.Initialize();
@@ -109,14 +111,17 @@ namespace Zadatak4.PongGame
             var paddleTexture = Content.Load<Texture2D>("paddle");
             PaddleBottom.Texture = paddleTexture;
             PaddleTop.Texture = paddleTexture;
+
             BallTexture = Content.Load<Texture2D>("ball");
             Ball.GetElement(0).Texture = BallTexture;
+
             Background.Texture = Content.Load<Texture2D>("background");
 
             _speedPickupTexture = Content.Load<Texture2D>("speedPickup");
             _multiBallPickupTexture = Content.Load<Texture2D>("multiBallPickup");
 
             HitSound = Content.Load<SoundEffect>("hit");
+
             Music = Content.Load<Song>("music");
             MediaPlayer.IsRepeating = true;
             MediaPlayer.Play(Music);
@@ -151,9 +156,18 @@ namespace Zadatak4.PongGame
 
             //Top paddle control
             if (touchState.IsKeyDown(Keys.A))
+            {
                 PaddleTop.X -= (float)(PaddleTop.Speed * gameTime.ElapsedGameTime.TotalMilliseconds);
+                _paddleAi = false;
+            }
             if (touchState.IsKeyDown(Keys.D))
+            {
                 PaddleTop.X += (float)(PaddleTop.Speed * gameTime.ElapsedGameTime.TotalMilliseconds);
+                _paddleAi = false;
+            }
+
+            if (_paddleAi)
+                PaddleTop.X = MathHelper.Lerp(PaddleTop.X, PaddleTop.X + PaddleAI.Move(PaddleTop, Ball) * (float)(PaddleTop.Speed * gameTime.ElapsedGameTime.TotalMilliseconds), Ball.GetElement(0).Speed > 1 ? 1 : (Ball.GetElement(0).Speed / 1.2f));
 
             //Limit paddle position
             PaddleBottom.X =
@@ -200,8 +214,6 @@ namespace Zadatak4.PongGame
                     if (ball.Speed < GameConstants.DefaultMaxBallSpeed)
                         ball.Speed *= ball.BumpSpeedIncreaseFactor;
 
-                    Debug.Print(Ball.Count.ToString());
-
                     if (ball == Ball.GetElement(0))
                         SpawnPickups();
                 }
@@ -213,8 +225,6 @@ namespace Zadatak4.PongGame
                         pickup.Activate(this);
                         Pickups.Remove(pickup);
                     }
-                if (int.Parse(Timer) < 0)
-                    Timer = "0";
             }
 
             //Ball outside of the screen
@@ -242,14 +252,15 @@ namespace Zadatak4.PongGame
             for (var i = 0; i < Pickups.Count; i++)
                 Pickups.GetElement(i).DrawSpriteOnScreen(_spriteBatch);
 
-            for (var i = 0; i < _spritesForDrawList.Count; i++)
-                _spritesForDrawList.GetElement(i).DrawSpriteOnScreen(_spriteBatch);
+            PaddleTop.DrawSpriteOnScreen(_spriteBatch);
+            PaddleBottom.DrawSpriteOnScreen(_spriteBatch);
 
             for (var i = 0; i < Ball.Count; i++)
                 Ball.GetElement(i).DrawSpriteOnScreen(_spriteBatch);
 
             if (int.Parse(Timer) > 0)
                 _spriteBatch.DrawString(Font, Timer, new Vector2(0, Font.MeasureString(Timer).Y), Color.Black);
+
             _spriteBatch.DrawString(Font, Score.Player1.ToString(),
                 new Vector2(screenBounds.Width - Font.MeasureString(Score.Player1.ToString()).X,
                     screenBounds.Height / 2f - Font.MeasureString(Score.Player1.ToString()).Y), Color.Black);
@@ -273,6 +284,9 @@ namespace Zadatak4.PongGame
 
         private void SpawnPickups()
         {
+            if (Timer == "-1")
+                Timer = "0";
+
             var screenBounds = GraphicsDevice.Viewport.Bounds;
             var rnd = new Random();
             if (Pickups.Count > 5 || rnd.Next(0, 10) > 3) return;

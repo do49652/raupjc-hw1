@@ -47,6 +47,7 @@
     <Compile Include="PongGame\Extras\Pickup.cs" />
     <Compile Include="PongGame\Extras\Score.cs" />
     <Compile Include="PongGame\Extras\SpeedUpPickup.cs" />
+    <Compile Include="PongGame\Extras\PaddleAI.cs" />
     <Compile Include="PongGame\GameConstants.cs" />
     <Compile Include="PongGame\Objects\IPhysicalObject2D.cs" />
     <Compile Include="PongGame\Objects\Background.cs" />
