@@ -16,13 +16,16 @@ namespace Zadatak4.Extras
         {
             _pong = pong;
 
-            var newBall1 = new Ball(GameConstants.DefaultBallSize, GameConstants.DefaultInitialBallSpeed, GameConstants.DefaultBallBumpSpeedIncreaseFactor);
-            newBall1.X = _pong.Ball.GetElement(0).X;
-            newBall1.Y = _pong.Ball.GetElement(0).Y;
-            newBall1.Texture = _pong.BallTexture;
-            newBall1.Direction = new BallDirection(_pong.Ball.GetElement(0).Direction);
-            newBall1.Direction.invertX();
-            
+            var newBall1 = new Ball(GameConstants.DefaultBallSize, GameConstants.DefaultInitialBallSpeed,
+                GameConstants.DefaultBallBumpSpeedIncreaseFactor)
+            {
+                X = _pong.Ball.GetElement(0).X,
+                Y = _pong.Ball.GetElement(0).Y,
+                Texture = _pong.BallTexture,
+                Direction = new BallDirection(_pong.Ball.GetElement(0).Direction)
+            };
+            newBall1.Direction.invertY();
+
             _pong.Ball.Add(newBall1);
         }
     }
